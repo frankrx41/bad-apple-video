@@ -16,57 +16,18 @@ char buff[MAX_BUFF];
 #define SCREEN_WIDTH    (120)
 #define SCREEN_HEIGHT   (40)
 
-HWND GetConsoleHwnd(void)
-{
-#define MY_BUFSIZE 1024 // Buffer size for console window titles.
-    HWND hwndFound;         // This is what is returned to the caller.
-    char pszNewWindowTitle[MY_BUFSIZE]; // Contains fabricated
-    // WindowTitle.
-    char pszOldWindowTitle[MY_BUFSIZE]; // Contains original
-    // WindowTitle.
-
-    // Fetch current window title.
-
-    GetConsoleTitle(pszOldWindowTitle,MY_BUFSIZE);
-
-    // Format a "unique" NewWindowTitle.
-
-    wsprintf(pszNewWindowTitle,"%d/%d",
-             GetTickCount(),
-             GetCurrentProcessId());
-
-    // Change current window title.
-
-    SetConsoleTitle(pszNewWindowTitle);
-
-    // Ensure window title has been updated.
-
-    Sleep(40);
-
-    // Look for NewWindowTitle.
-
-    hwndFound=FindWindow(NULL,pszNewWindowTitle);
-
-    // Restore original window title.
-
-    SetConsoleTitle(pszOldWindowTitle);
-
-    return(hwndFound);
-}
-
-
 struct lyrics
 {
     float   m_Min;
     float   m_Sec;
-    char *  m_Text;
+    char*   m_Text;
 };
 
 struct lyrics lyrics[] =
 {
-0, 1,  "Bad Apple!!",
+0, 1,   "Bad Apple!!",
 0, 2,   " ",
-0, 3,  "東方プロジェクト",
+0, 3,   "東方プロジェクト",
 0, 4,   " ",
 0, 29,  "流れてく 時の中ででも 気だるさが ほらグルグル廻って",
 0, 36,  "私から 離れる心も 見えないわ そう知らない？",
@@ -98,7 +59,7 @@ struct lyrics lyrics[] =
 59,59,  " ",
 };
 
-static int stat_goto_xy;
+static int stat_goto_xy;    // profile only
 
 static HANDLE console_handle;
 
@@ -108,12 +69,11 @@ gotoxy(x,y)
     SetConsoleCursorPosition(console_handle, cd);
 }
 
+typedef struct buffer buffer;
 struct buffer
 {
     char m_buff[SCREEN_HEIGHT][SCREEN_WIDTH * 3];   // must be y x, *3 is for utf-8
 };
-
-typedef struct buffer buffer;
 
 
 buffprintf(buffer* buff, int x, int y, const char* format, ...)
@@ -132,10 +92,15 @@ buffclear(buffer* buff)
 
 buffprinttoscreen(buffer* frontbuff, buffer* backbuff)
 {
-    // HWND hwnd = GetConsoleWindow();
-    // HDC hdc = GetDC(hwnd);
     for( int y=0; y<SCREEN_HEIGHT; y++ )
     {
+        bool position_is_next = false;
+        
+        if( y == INFO_LINE )
+        {
+            volatile int foo = 1;
+        }
+
         for(int x=0, x_hack = 0; x<SCREEN_WIDTH * 3; x++, x_hack++ )
         {
             // utf8 check
@@ -156,38 +121,58 @@ buffprinttoscreen(buffer* frontbuff, buffer* backbuff)
             if( need_update || backbuff->m_buff[y][x] != frontbuff->m_buff[y][x] )
             {
                 assert(x_hack<120);
-                gotoxy(x_hack,y);
-                stat_goto_xy++;
+                if( !position_is_next )
+                {
+                    gotoxy(x_hack,y);
+                    stat_goto_xy++;
+                }
+
                 if( backbuff->m_buff[y][x] < 0)
                 {
+                    // hack
+                    // printf("%c%c%c") is too slow for utf8 char
                     if( backbuff->m_buff[y][x+1] < 0 )
                     {
-                        printf("%c%c%c", backbuff->m_buff[y][x], backbuff->m_buff[y][x+1], backbuff->m_buff[y][x+2]);
+                        int org_x = x;
+                        int print_str_length = 0;
+                        static char str_buff[4096];
 
-                        // here is a hack for gotoxy
-                        for(int x_next = x+3;
-                                backbuff->m_buff[y][x_next] == backbuff->m_buff[y][x] &&
-                                backbuff->m_buff[y][x_next+1] == backbuff->m_buff[y][x+1] &&
-                                backbuff->m_buff[y][x_next+2] == backbuff->m_buff[y][x+2];
-                            x_next +=2, x+=3, x_hack+=1)
+                        for(; backbuff->m_buff[y][x] != frontbuff->m_buff[y][x] ||
+                              backbuff->m_buff[y][x+1] != frontbuff->m_buff[y][x+1] ||
+                              backbuff->m_buff[y][x+2] != frontbuff->m_buff[y][x+2]
+                            ;)
                         {
-                            printf("%c%c%c", backbuff->m_buff[y][x], backbuff->m_buff[y][x+1], backbuff->m_buff[y][x+2]);
+                            print_str_length ++;
+                            x += 3;
+                            x_hack ++;
                         }
-                        // while(1);
+                        x -= 3;
+
+                        print_str_length *= 3;
+                        memcpy(str_buff, &backbuff->m_buff[y][org_x], print_str_length);
+                        str_buff[print_str_length+1] = 0;
+                        printf("%s", str_buff);
                     }
+                    // here is lyrics
                     else
                     {
-                        printf("%c%c", backbuff->m_buff[y][x], backbuff->m_buff[y][x+1]);
+                        printf("%s", &backbuff->m_buff[y][x]);
+                        break;
+                        // printf("%c%c", backbuff->m_buff[y][x], backbuff->m_buff[y][x+1]);
                     }
-                   
                 }
                 else
                 {
-                    // gotoxy(x_hack,y);
                     printf("%c", backbuff->m_buff[y][x]);
                 }
+                position_is_next = true;
+            }
+            else
+            {
+                position_is_next = false;
             }
 
+            // utf8 check
             if( backbuff->m_buff[y][x] < 0 )
             {
                 if( backbuff->m_buff[y][x+1] < 0 )
@@ -201,17 +186,7 @@ buffprinttoscreen(buffer* frontbuff, buffer* backbuff)
             }
         }
     }
-    // ReleaseDC(hwnd, hdc);
-
-    // for( int y=LYRICS_LINE; y<SCREEN_HEIGHT; y++)
-    // {
-    //     gotoxy(0,y);
-    //     printf("%s", &backbuff->m_buff[y][0]);
-    // }
 }
-
-
-// #define printf ...
 
 main(){
     // SetConsoleOutputCP(65001);
@@ -230,11 +205,11 @@ main(){
     int lyrics_index = 0;
     float fps = 0;
 
+    // for fps
     LARGE_INTEGER sklick, eklick, cpu_khz;  
     float delta_time;
     float elapse_time = 0;
     float wait_time = WAIT_TIME;
-
     QueryPerformanceFrequency(&cpu_khz);
 
     // getch();
@@ -249,9 +224,12 @@ main(){
     buffclear(frontbuffer);
 
     QueryPerformanceCounter(&sklick);
+
     int line = 0;
     int skip_frame = 0;
     int stat_skip_frame = 0;
+    int stat_tick = 0;
+
     while( !feof(fp) )
     {
         fgets(buff, MAX_BUFF, fp);
@@ -272,7 +250,7 @@ main(){
                     frontbuffer = temp;
                     buffclear(backbuffer);
                     WORD tick2 = GetTickCount();
-                    // buffprintf(backbuffer, 0, 39, "%d", tick2 - tick1);
+                    stat_tick =  tick2 - tick1;
                 }
                 else
                 {
@@ -326,8 +304,8 @@ main(){
                     buffprintf(backbuffer, 8, LYRICS_LINE, "%s", lyrics[lyrics_index].m_Text);
                 }
 
-                buffprintf(backbuffer, 0, INFO_LINE, "fps: %-7.2f\ttime %02d:%02d\t skip frame: %d", fps, (int)(elapse_time/60), (int)(elapse_time)%60, stat_skip_frame);
-                // buffprintf(backbuffer, 0, INFO_LINE+1, "gotoxy: %d", stat_goto_xy);
+                buffprintf(backbuffer, 0, INFO_LINE, "fps: %7.2f  time %02d:%02d  skipframe: %d", fps, (int)(elapse_time/60), (int)(elapse_time)%60, stat_skip_frame);
+                buffprintf(backbuffer, 0, INFO_LINE+1, "gotoxy: %-5d  tick: %-5d", stat_goto_xy, stat_tick);
 
                 has_do_fps = true;
             }
@@ -339,11 +317,10 @@ main(){
             frame_index++;
             buffprintf(backbuffer, 0, line, "%07d ", frame_index);
             buffprintf(backbuffer, 8, line, buff);
+            // buffprintf(backbuffer, 8, line, "▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░░░░░░░░░░░░▓▓▓▓▓▓▓▓▓▓▓▓▓▓░░░░░░▓▓▓▓░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░");
             line++;
         }
     }
-
-
 
     return 0;
 }
