@@ -25,38 +25,40 @@ struct lyrics
 
 struct lyrics lyrics[] =
 {
+// 0, 1,   "流れてく  時の中ででも  気だるさが  ほらグルグル廻って",
+// 0, 3,   "私から  離れる心も  見えないわ  そう知らない？",
 0, 1,   "Bad Apple!!",
-0, 2,   " ",
+0, 3,   "",
 0, 3,   "東方プロジェクト",
-0, 4,   " ",
-0, 29,  "流れてく 時の中ででも 気だるさが ほらグルグル廻って",
-0, 36,  "私から 離れる心も 見えないわ そう知らない？",
-0, 43,  "自分から 動くこともなく 時の隙間に 流され続けて",
-0, 50,  "知らないわ 周りのことなく 私は私 それだけ",
-0, 57,  "夢見てる？ 何も見てない？ 語るも無駄な 自分の言葉？",
-1, 03,  "悲しむなんて 疲れるだけよ 何も感じず 過ごせばいいの",
-1, 10,  "戸惑う言葉 与えられても 自分の心 ただ上の空",
-1, 17,  "もし私から 動くのならば すべて変えるのなら 黒にする",
-1, 24,  "こんな自分に 未来はあるの？こんな世界に 私はいるの？",
-1, 31,  "今切ないの？今悲しいの？自分の事も わからないのまま",
-1, 38,  "歩むことさえ 疲れるだけよ 人のことなど 知りもしないわ",
-1, 45,  "こんな私も 変われるのなら もし変われるのなら 白になる？",
-1, 52,  " ",
-2, 06,  "流れてく 時の中ででも 気だるさがほら グルグル廻って",
-2, 13,  "私から 離れる心も 見えないわそう 知らない？",
-2, 20,  "自分から 動くこともなく 時の隙間に 流され続けて",
-2, 27,  "知らないわ 周りのことなく 私は私 それだけ？",
-2, 34,  " ",
-2, 34,  "夢見てる？ 何も見てない？ 語るも無駄な 自分の言葉？",
-2, 40,  "悲しむなんて 疲れるだけよ 何も感じず 過ごせばいいの",
-2, 47,  "戸惑う言葉 与えられても 自分の心 ただ上の空",
-2, 54,  "もし私から 動くのならば すべて変えるのなら 黒にする",
+0, 4,   "",
+0, 29,  "流れてく　時の中ででも　気だるさが　ほらグルグル廻って",
+0, 36,  "私から　離れる心も　見えないわ　そう知らない？",
+0, 43,  "自分から　動くこともなく　時の隙間に　流され続けて",
+0, 50,  "知らないわ　周りのことなく　私は私　それだけ",
+0, 57,  "夢見てる？　何も見てない？　語るも無駄な　自分の言葉？",
+1, 03,  "悲しむなんて　疲れるだけよ　何も感じず 過ごせばいいの",
+1, 10,  "戸惑う言葉　与えられても　自分の心　ただ上の空",
+1, 17,  "もし私から　動くのならば　すべて変えるのなら　黒にする",
+1, 24,  "こんな自分に　未来はあるの？こんな世界に　私はいるの？",
+1, 31,  "今切ないの？今悲しいの？自分の事も　わからないのまま",
+1, 38,  "歩むことさえ　疲れるだけよ　人のことなど　知りもしないわ",
+1, 45,  "こんな私も　変われるのなら　もし変われるのなら　白になる？",
+1, 52,  "　",
+2, 06,  "流れてく　時の中ででも　気だるさがほら　グルグル廻って",
+2, 13,  "私から　離れる心も　見えないわそう　知らない？",
+2, 20,  "自分から　動くこともなく　時の隙間に　流され続けて",
+2, 27,  "知らないわ　周りのことなく　私は私　それだけ？",
+2, 34,  "　",
+2, 34,  "夢見てる？　何も見てない？　語るも無駄な　自分の言葉？",
+2, 40,  "悲しむなんて　疲れるだけよ　何も感じず　過ごせばいいの",
+2, 47,  "戸惑う言葉　与えられても 自分の心　ただ上の空",
+2, 54,  "もし私から　動くのならば　すべて変えるのなら　黒にする",
 3, 02,  "動くのならば　動くのならば　すべて壊すわ　すべて壊すわ",
 3,  8,  "悲しむならば　悲しむならば　私の心　白く変われる？",
 3, 15,  "貴方の事も　私のことも　全ての事も　まだ知らないの",
 3, 22,  "重い目蓋を　開けたのならば　すべて壊すのなら　黒になれ!!!",
-3, 30,  " ",
-59,59,  " ",
+3, 30,  "　",
+59,59,  "　",
 };
 
 static int stat_goto_xy;    // profile only
@@ -91,8 +93,21 @@ buffclear(buffer* buff)
     memset(buff, 0, sizeof(buffer));
 }
 
+void clearscreen(char fill) { 
+    COORD tl = {0,0};
+    CONSOLE_SCREEN_BUFFER_INFO s;
+    GetConsoleScreenBufferInfo(console_handle, &s);
+    DWORD written;
+    DWORD cells = s.dwSize.X * s.dwSize.Y;
+    
+    FillConsoleOutputCharacter(console_handle, fill, cells, tl, &written);
+    FillConsoleOutputAttribute(console_handle, s.wAttributes, cells, tl, &written);
+    SetConsoleCursorPosition(console_handle, tl);
+}
+
 buffprinttoscreen(buffer* frontbuff, buffer* backbuff)
 {
+    // clearscreen(' ');
     for( int y=0; y<SCREEN_HEIGHT; y++ )
     {
         bool position_is_next = false;
@@ -102,50 +117,71 @@ buffprinttoscreen(buffer* frontbuff, buffer* backbuff)
             volatile int foo = 1;
         }
 
-        for(int x=0, x_hack = 0; x<SCREEN_WIDTH * 3; x++, x_hack++ )
+        for(int back_index=0, front_index=0, x=0; x<SCREEN_WIDTH; back_index++, front_index++, x++)
         {
             // utf8 check
             bool need_update = false;
-            if( backbuff->m_buff[y][x] < 0 )
+            int add_back_index = 0;
+            int add_front_index = 0;
+            if( backbuff->m_buff[y][back_index] < 0 )
             {
-                if( backbuff->m_buff[y][x+1] != frontbuff->m_buff[y][x+1] )
+                if( backbuff->m_buff[y][back_index+1] != frontbuff->m_buff[y][front_index+1] )
                 {
                     need_update = true;
                 }
                 else
-                if( backbuff->m_buff[y][x+2] != frontbuff->m_buff[y][x+2] )
+                if( backbuff->m_buff[y][back_index+2] != frontbuff->m_buff[y][front_index+2] )
                 {
                     need_update = true;
                 }
+
+                if( backbuff->m_buff[y][back_index+1] < 0 )
+                {
+                    add_back_index = 2;
+                }
+                else
+                {
+                    add_back_index = 1;
+                }
             }
 
-            if( need_update || backbuff->m_buff[y][x] != frontbuff->m_buff[y][x] )
+            if( need_update || backbuff->m_buff[y][back_index] != frontbuff->m_buff[y][front_index] )
             {
-                assert(x_hack<120);
                 if( !position_is_next )
                 {
-                    gotoxy(x_hack,y);
+                    gotoxy(x,y);
                     stat_goto_xy++;
                 }
 
-                if( backbuff->m_buff[y][x] < 0)
+                if( backbuff->m_buff[y][back_index] < 0)
                 {
                     // hack
                     // printf("%c%c%c") is too slow for utf8 char
-                    if( backbuff->m_buff[y][x+1] < 0 )
+                    if( backbuff->m_buff[y][back_index+1] <= 0 )
                     {
-                        int org_x = x;
+                        int org_x = back_index;
                         int print_str_length = 0;
                         static char str_buff[4096];
 
-                        for(; backbuff->m_buff[y][x] != frontbuff->m_buff[y][x] ||
-                              backbuff->m_buff[y][x+1] != frontbuff->m_buff[y][x+1] ||
-                              backbuff->m_buff[y][x+2] != frontbuff->m_buff[y][x+2]
+                        for(; backbuff->m_buff[y][back_index] != frontbuff->m_buff[y][front_index] ||
+                              backbuff->m_buff[y][back_index+1] != frontbuff->m_buff[y][front_index+1] ||
+                              backbuff->m_buff[y][back_index+2] != frontbuff->m_buff[y][front_index+2]
                             ;)
                         {
                             print_str_length ++;
-                            x += 3;
-                            x_hack ++;
+                            back_index += 3;
+                            front_index += 3;
+                            x++;
+
+                            if( x >= SCREEN_WIDTH )
+                            {
+                                break;
+                            }
+
+                            if( backbuff->m_buff[y][back_index] >= 0 )
+                            {
+                                break;
+                            }
                         }
 
                         print_str_length *= 3;
@@ -153,17 +189,38 @@ buffprinttoscreen(buffer* frontbuff, buffer* backbuff)
                         str_buff[print_str_length] = 0;
                         printf("%s", str_buff);
                     }
-                    // here is lyrics
                     else
                     {
-                        printf("%s", &backbuff->m_buff[y][x]);
-                        break;
-                        // printf("%c%c", backbuff->m_buff[y][x], backbuff->m_buff[y][x+1]);
+                        printf("%c%c%c", backbuff->m_buff[y][back_index], backbuff->m_buff[y][back_index+1], backbuff->m_buff[y][back_index+2]);
+                        // printf("%c%c", backbuff->m_buff[y][back_index], backbuff->m_buff[y][back_index+1]);
                     }
                 }
                 else
                 {
-                    printf("%c", backbuff->m_buff[y][x]);
+                    if( frontbuff->m_buff[y][front_index+1] < 0 )
+                    {
+                        if( backbuff->m_buff[y][back_index] )
+                        {
+                            printf("%c%c", backbuff->m_buff[y][back_index], backbuff->m_buff[y][back_index+1]);
+                            back_index++;
+                        }
+                        else
+                        {
+                            printf("　");
+                        }
+                        x++;
+                    }
+                    else
+                    {
+                        if( backbuff->m_buff[y][back_index] )
+                        {
+                            printf("%c", backbuff->m_buff[y][back_index]);
+                        }
+                        else
+                        {
+                            printf(" ");
+                        }
+                    }
                 }
                 position_is_next = true;
             }
@@ -172,18 +229,18 @@ buffprinttoscreen(buffer* frontbuff, buffer* backbuff)
                 position_is_next = false;
             }
 
-            // utf8 check
-            if( backbuff->m_buff[y][x] < 0 )
+            if( frontbuff->m_buff[y][front_index] < 0 )
             {
-                if( backbuff->m_buff[y][x+1] < 0 )
+                if( frontbuff->m_buff[y][front_index+1] < 0 )
                 {
-                    x += 2;
+                    front_index += 2;
                 }
                 else
                 {
-                    x += 1;
+                    front_index += 1;
                 }
             }
+            back_index += add_back_index;
         }
     }
 }
@@ -305,7 +362,7 @@ main(){
                 }
 
                 buffprintf(backbuffer, 0, INFO_LINE, "fps: %7.2f  time %02d:%02d  skipframe: %d", fps, (int)(elapse_time/60), (int)(elapse_time)%60, stat_skip_frame);
-                buffprintf(backbuffer, 0, INFO_LINE+1, "gotoxy: %-5d  tick: %-5d  error: %#x", stat_goto_xy, stat_tick, stat_error);
+                // buffprintf(backbuffer, 0, INFO_LINE+1, "gotoxy: %-5d  tick: %-5d  error: %#x", stat_goto_xy, stat_tick, stat_error);
 
                 has_do_fps = true;
             }
@@ -315,9 +372,8 @@ main(){
         {
             has_do_fps = false;
             frame_index++;
-            buffprintf(backbuffer, 0, line, "%07d ", frame_index);
-            buffprintf(backbuffer, 8, line, buff);
-            // buffprintf(backbuffer, 8, line, "▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░░░░░░░░░░░░▓▓▓▓▓▓▓▓▓▓▓▓▓▓░░░░░░▓▓▓▓░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░");
+            // buffprintf(backbuffer, 0, line, "%07d ", frame_index);
+            // buffprintf(backbuffer, 8, line, buff);
             line++;
         }
     }
