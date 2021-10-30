@@ -60,6 +60,7 @@ struct lyrics lyrics[] =
 };
 
 static int stat_goto_xy;    // profile only
+static int stat_error;      // debug only
 
 static HANDLE console_handle;
 
@@ -146,11 +147,10 @@ buffprinttoscreen(buffer* frontbuff, buffer* backbuff)
                             x += 3;
                             x_hack ++;
                         }
-                        x -= 3;
 
                         print_str_length *= 3;
                         memcpy(str_buff, &backbuff->m_buff[y][org_x], print_str_length);
-                        str_buff[print_str_length+1] = 0;
+                        str_buff[print_str_length] = 0;
                         printf("%s", str_buff);
                     }
                     // here is lyrics
@@ -276,7 +276,7 @@ main(){
 
                         if( wait_time > WAIT_TIME )
                         {
-                            assert(false);
+                            stat_error |= 1;
                         }
 
                         break;
@@ -305,7 +305,7 @@ main(){
                 }
 
                 buffprintf(backbuffer, 0, INFO_LINE, "fps: %7.2f  time %02d:%02d  skipframe: %d", fps, (int)(elapse_time/60), (int)(elapse_time)%60, stat_skip_frame);
-                buffprintf(backbuffer, 0, INFO_LINE+1, "gotoxy: %-5d  tick: %-5d", stat_goto_xy, stat_tick);
+                buffprintf(backbuffer, 0, INFO_LINE+1, "gotoxy: %-5d  tick: %-5d  error: %#x", stat_goto_xy, stat_tick, stat_error);
 
                 has_do_fps = true;
             }
