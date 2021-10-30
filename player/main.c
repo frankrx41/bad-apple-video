@@ -13,6 +13,10 @@
 
 char buff[MAX_BUFF];
 
+#define SCREEN_WIDTH    (120)
+#define SCREEN_HEIGHT   (40)
+
+
 struct lyrics
 {
     float   m_Min;
@@ -62,10 +66,92 @@ gotoxy(x,y)
     SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), cd);
 }
 
+struct buffer
+{
+    char m_buff[SCREEN_HEIGHT][SCREEN_WIDTH * 3];   // must be y x, *3 is for utf-8
+};
+
+typedef struct buffer buffer;
+
+
+buffprintf(buffer* buff, int x, int y, const char* format, ...)
+{
+    va_list ap;
+    va_start(ap, format);
+    vsprintf(&buff->m_buff[y][x], format, ap);
+
+    va_end(ap);
+}
+
+buffclear(buffer* buff)
+{
+    memset(buff, 0, sizeof(buffer));
+}
+
+buffprinttoscreen(buffer* frontbuff, buffer* backbuff)
+{
+    for( int y=0; y<SCREEN_HEIGHT; y++ )
+    {
+        for(int x=0, x_hack = 0; x<SCREEN_WIDTH * 3; x++, x_hack++ )
+        {
+            // -30 check
+            bool need_update = false;
+            if( backbuff->m_buff[y][x] == -30 )
+            {
+                // need_update = true;
+                if( backbuff->m_buff[y][x+1] != frontbuff->m_buff[y][x+1] )
+                {
+                    need_update = true;
+                }
+                else
+                if( backbuff->m_buff[y][x+2] != frontbuff->m_buff[y][x+2] )
+                {
+                    need_update = true;
+                }
+            }
+            
+            if( need_update || backbuff->m_buff[y][x] != frontbuff->m_buff[y][x] )
+            {
+                assert(x_hack<120);
+                gotoxy(x_hack,y);
+                if( backbuff->m_buff[y][x] == -30)
+                {
+                    if( backbuff->m_buff[y][x+1] == -106 )
+                    {
+                        printf("%c%c%c", backbuff->m_buff[y][x], backbuff->m_buff[y][x+1], backbuff->m_buff[y][x+2]);
+                    }
+                    else
+                    {
+                        assert(false);
+                        printf("%c%c", backbuff->m_buff[y][x], backbuff->m_buff[y][x+1]);
+                    }
+                   
+                }
+                else
+                {
+                    printf("%c", backbuff->m_buff[y][x]);
+                }
+            }
+
+            if( backbuff->m_buff[y][x] == -30 )
+            {
+                x += 2;
+            }
+        }
+    }
+}
+
+
+#define printf ...
+
 main(){
     // SetConsoleOutputCP(65001);
-    system("mode 120,40");
-    SetConsoleTitleA("Bad Apple!!");
+    {
+        char command[256];
+        sprintf(command, "mode %d,%d", SCREEN_WIDTH, SCREEN_HEIGHT);
+        system(command);
+        SetConsoleTitleA("Bad Apple!!");
+    }
 
     FILE * fp = fopen("../bad-apple.txt", "r");
     assert(fp);
@@ -81,20 +167,41 @@ main(){
 
     QueryPerformanceFrequency(&cpu_khz);
 
-    getch();
+    // getch();
 
     PlaySoundA("../bad-apple.wav", NULL, SND_FILENAME|SND_ASYNC);
     bool has_do_fps = false;
 
+    buffer buffx[2];
+    buffer* backbuffer = &buffx[0];
+    buffer* frontbuffer = &buffx[1];
+    buffclear(backbuffer);
+    buffclear(frontbuffer);
+
     QueryPerformanceCounter(&sklick);
+    int line = 0;
     while( !feof(fp) )
     {
         fgets(buff, MAX_BUFF, fp);
         if(strlen(buff) == 1)
         {
+            line = 0;
+
             // do fps
             if( !has_do_fps )
             {
+                // swap buff
+                {
+                    WORD tick1 = GetTickCount();
+                    buffprinttoscreen(frontbuffer, backbuffer);
+                    buffer* temp = backbuffer;
+                    backbuffer = frontbuffer;
+                    frontbuffer = temp;
+                    buffclear(backbuffer);
+                    WORD tick2 = GetTickCount();
+                    buffprintf(backbuffer, 0, 39, "%d", tick2 - tick1);
+                }
+
                 for(;;)
                 {
                     QueryPerformanceCounter(&eklick);
@@ -113,6 +220,7 @@ main(){
                         }
                     }
                 }
+
                 elapse_time += delta_time;
                 fps = 1.f/delta_time;
                 sklick = eklick;
@@ -124,20 +232,17 @@ main(){
                     {
                         lyrics_index++;
                         // clear traces
-                        for(int i=0; i<100; i++)
-                        {
-                            gotoxy(i, LYRICS_LINE);
-                            printf(".\b ");
-                        }
+                        // for(int i=0; i<100; i++)
+                        // {
+                        //     gotoxy(i, LYRICS_LINE);
+                        //     printf(".\b ");
+                        // }
                     }
                     // print lyrics
-                    gotoxy(0, LYRICS_LINE);
-                    printf("        %s", lyrics[lyrics_index].m_Text);
+                    buffprintf(backbuffer, 8, LYRICS_LINE, "%s", lyrics[lyrics_index].m_Text);
                 }
 
-                gotoxy(0,INFO_LINE);
-                printf("fps: %.2f\ttime %02d:%02d", fps, (int)(elapse_time/60), (int)(elapse_time)%60);
-                gotoxy(0,0);
+                buffprintf(backbuffer, 0, INFO_LINE, "fps: %.2f\ttime %02d:%02d", fps, (int)(elapse_time/60), (int)(elapse_time)%60);
 
                 has_do_fps = true;
             }
@@ -147,8 +252,10 @@ main(){
         {
             has_do_fps = false;
             frame_index++;
-            printf("%07d ", frame_index);
-            printf(buff);
+            buffprintf(backbuffer, 0, line, "%07d ", frame_index);
+            buffprintf(backbuffer, 8, line, buff);
+            // buffprintf(backbuffer, 8, line, "▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░░░░░░░░░░░░▓▓▓▓▓▓▓▓▓▓▓▓▓▓░░░░░░▓▓▓▓░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░");
+            line++;
         }
     }
 
